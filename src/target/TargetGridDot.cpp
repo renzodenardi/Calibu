@@ -594,11 +594,27 @@ void TargetGridDot::SaveEPS(
     f << "%%Title: Calibration Target" << std::endl;
     f << "%%Origin: 0 0" << std::endl;
     // usletter BoundingBox is 0, 0, 612, 792
-    f << "%%BoundingBox: 0 0 " << max_pts[0] << " " << max_pts[1] << std::endl;
+    f << "%%BoundingBox: 0 0 " << max_pts[0] + pts_per_unit*grid_spacing << " " << max_pts[1] + pts_per_unit*grid_spacing << std::endl;
     f << std::endl;
-    f << "270 rotate 0 " << -max_pts[0] << " 0 translate" << std::endl;
+    f << pts_per_unit*grid_spacing*0.5 << " " << pts_per_unit*grid_spacing*0.5 << " translate" << std::endl;
+    f << std::endl;
+    f << "/cross { newpath" << std::endl;
+    f << "moveto" << std::endl;
+    f << "10 0 rmoveto" << std::endl;
+    f << "-20 0 rlineto" << std::endl;
+    f << "10 10 rmoveto" << std::endl;
+    f << "0 -20 rlineto" << std::endl;
+    f << "0.5 setlinewidth" << std::endl;
+    f << "stroke"<< std::endl;
+    f << "} def" << std::endl;
 
+    for( int c=0; c<M.cols(); ++c) {
+        const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(c,0));
+        f << p_pts[0] << " " << max_pts[1] - p_pts[1] + pts_per_unit*grid_spacing << " cross" << std::endl;
+    }
     for( int r=0; r<M.rows(); ++r ) {
+        const Eigen::Vector2d p_ptsl = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(0,r));
+        f << p_ptsl[0] - pts_per_unit*grid_spacing << " " << max_pts[1] - p_ptsl[1]  << " cross" << std::endl;
         for( int c=0; c<M.cols(); ++c) {
             const double rad_pts = pts_per_unit * ((M(r,c) == 1) ? rad1 : rad0);
             const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(c,r));
@@ -607,6 +623,12 @@ void TargetGridDot::SaveEPS(
                 << "0.0 setgray fill" << std::endl
                 << std::endl;
         }
+        const Eigen::Vector2d p_ptsr = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(M.cols()-1,r));
+        f << p_ptsr[0] + pts_per_unit*grid_spacing << " " << max_pts[1] - p_ptsr[1] << " cross" << std::endl;
+    }
+    for( int c=0; c<M.cols(); ++c) {
+        const Eigen::Vector2d p_pts = pts_per_unit* (offset + border2d + grid_spacing * Eigen::Vector2d(c,M.rows()-1));
+        f << p_pts[0] << " " << max_pts[1] - p_pts[1] - pts_per_unit*grid_spacing << " cross" << std::endl;
     }
 
     // output the binary code -- blank if id == 0, which is the default
